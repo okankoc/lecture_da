@@ -27,16 +27,16 @@ def report_acc(scenario, model, loss_fun, report_train=False):
     if report_train:
         # These are very slow
         print(f"Reporting accuracy/loss on source {scenario.source_name} training dataset...")
-        test(scenario.source_dataloader, model, loss_fun, scenario.device)
+        utils.test(scenario.source_dataloader, model, loss_fun, scenario.device)
 
         print(f"Reporting accuracy/loss on target {scenario.target_name} training dataset...")
-        test(scenario.target_dataloader, model, loss_fun, scenario.device)
+        utils.test(scenario.target_dataloader, model, loss_fun, scenario.device)
 
     print(f"Reporting accuracy/loss on {scenario.source_name} test dataset...")
-    test(scenario.source_test_dataloader, model, loss_fun, device=scenario.device)
+    utils.test(scenario.source_test_dataloader, model, loss_fun, device=scenario.device)
 
     print(f"Reporting accuracy/loss on {scenario.target_name} test dataset...")
-    test(scenario.target_test_dataloader, model, loss_fun, device=scenario.device)
+    utils.test(scenario.target_test_dataloader, model, loss_fun, device=scenario.device)
 
 
 def report_final_acc(scenario, methods, loss_fun, batch_idx):
@@ -47,10 +47,10 @@ def report_final_acc(scenario, methods, loss_fun, batch_idx):
         print("===============================")
 
 
-def train_network(model, loss_fun, train_data, device, dataloader_options):
+def train_network(model, loss_fun, train_data, device, dataloader_options, num_epochs):
     adam = torch.optim.Adam(model.parameters(), lr=1e-3)
     # sgd = torch.optim.SGD(model.parameters(), lr=1e-2, momentum=0.9, weight_decay=0.0)
-    opt = {"name": "ADAM", "method": adam, "num_epochs": 10, "batch_size": dataloader_options["batch_size"]}
+    opt = {"name": "ADAM", "method": adam, "num_epochs": num_epochs, "batch_size": dataloader_options["batch_size"]}
     params = dict(model.named_parameters())  # We actually don't need it for SGD
     train_dataloader = DataLoader(train_data, **dataloader_options)
     utils.train(
@@ -58,7 +58,7 @@ def train_network(model, loss_fun, train_data, device, dataloader_options):
         model,
         loss_fun,
         opt,
-        num_epochs=2,
+        num_epochs,
         device=device,
         params=params,
         report_every=10,
@@ -113,7 +113,7 @@ class MNIST_to_MNIST_M:
         def __call__(self, x):
             return torch.stack((x[0], x[0], x[0]), dim=0)
 
-    def train_model(self):
+    def train_model(self, num_epochs):
         loss_fun = nn.CrossEntropyLoss()
         if self.conv_name == "conv":
             model = ConvNet().to(self.device)
@@ -122,14 +122,14 @@ class MNIST_to_MNIST_M:
         else:
             raise Exception("Unknown model!")
 
-        train_network(model, loss_fun, self.source_data, self.device, self.dataloader_options)
+        train_network(model, loss_fun, self.source_data, self.device, self.dataloader_options, num_epochs)
         return model, loss_fun
 
 
 
 def run_shift(scenario, num_epochs):
     gen_acc_curve = False
-    model, loss_fun = scenario.train_model()
+    model, loss_fun = scenario.train_model(num_epochs=2)
 
     # Prepare adaptation methods
     methods = []
@@ -145,7 +145,7 @@ def run_shift(scenario, num_epochs):
     methods.append(
         IW(
             model,
-            scenario.device, method='logreg', use_embedding=False))
+            scenario.device, method='kmm', use_embedding=False))
 
     # Report accuracy of trained network on both datasets
     report_acc(scenario, model, loss_fun)
@@ -153,7 +153,7 @@ def run_shift(scenario, num_epochs):
     batch_idx = 0
     # Run adaptation
     for k in range(num_epochs):
-        print(f"Epoch {k}")
+        print(f"Epoch {k+1}")
         for (X_train, y_train), (X_shift, y_shift) in zip(scenario.source_dataloader, scenario.target_dataloader):
             X_train, X_shift, y_train = (
                 X_train.to(scenario.device),
@@ -163,10 +163,10 @@ def run_shift(scenario, num_epochs):
             for method in methods:
                 method.adapt(X_train, y_train, X_shift)
 
+            print(f"Batch id: {batch_idx+1}")
             batch_idx += 1
-            print(f"Batch id: {batch_idx}")
 
-    report_final_acc(scenario, methods, loss_fun, batch_idx)
+        report_final_acc(scenario, methods, loss_fun, batch_idx)
 
 
 if __name__ == "__main__":
@@ -177,5 +177,5 @@ if __name__ == "__main__":
     scenario = MNIST_to_MNIST_M(
         dataloader_options, gen_acc_curve=False, device="mps", preprocess=False, conv_name="conv2"
     )
-    run_shift(scenario, num_epochs=1)
+    run_shift(scenario, num_epochs=5)
     plt.show()
