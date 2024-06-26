@@ -7,7 +7,6 @@
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 """ Script for testing distribution shift adaptation with MNIST dataset."""
-import glog as log
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -170,7 +169,6 @@ def run_shift(scenario, num_epochs):
 
 
 if __name__ == "__main__":
-    log.setLevel("INFO")
     torch.set_printoptions(precision=4, sci_mode=False)
 
     dataloader_options = {"batch_size": 500, "shuffle": True, "drop_last": True}
