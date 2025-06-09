@@ -5,14 +5,13 @@ import numpy as np
 
 
 def train(dataloader, model, loss_fun, optimizer, num_epochs, device, params=None, report_every=1, report_acc=True):
-    print(f"==== {optimizer['name']} ====")
     size = len(dataloader.dataset)
     t0 = time.perf_counter()
     model.train()
     for epoch in range(num_epochs):
         # print(f"Epoch {epoch+1}\n-------------------------------")
         for batch, (X, y) in enumerate(dataloader):
-            X, y = X.to(device), one_hot(y, model.output_size).to(device)
+            X, y = X.to(device), one_hot(y, model.num_classes).to(device)
             # TODO: Is this necessary?
             X = X.contiguous()
             loss, params = step(optimizer, model, params, loss_fun, X, y)
@@ -22,7 +21,6 @@ def train(dataloader, model, loss_fun, optimizer, num_epochs, device, params=Non
         if report_acc is True:
             print("Train dataset metrics:")
             test(dataloader, model, loss_fun, device)
-    print(f"Method took {time.perf_counter() - t0} sec")
 
 
 def test(dataloader, model, loss_fun, device):

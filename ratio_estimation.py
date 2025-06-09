@@ -36,16 +36,16 @@ def kernel_mean_matching(x_test, x_train, normalize='False', bound=10.0, eps_sca
     ker_vec = torch.sum(torch.exp(-(torch.cdist(x_train, x_test)**2) / (2*(sigma**2))), dim=1) * (num_train / num_test)
 
     eps = eps_scale * bound / np.sqrt(num_train)
-    G = ker_mat.double().numpy()
+    G = ker_mat.cpu().numpy().astype(np.double)
     G += lamb * np.eye(num_train)
-    a = ker_vec.double().numpy()
+    a = ker_vec.cpu().numpy().astype(np.double)
     # Normalization seems to make test error performance worse
     if normalize is True:
-        C = torch.cat((torch.ones(1, num_train), -torch.ones(1, num_train), torch.eye(num_train), -torch.eye(num_train))).double().numpy().T
-        b = torch.cat((torch.tensor([(1 - eps) * num_train, -(1 + eps) * num_train]), torch.zeros(num_train), -bound * torch.ones(num_train))).double().numpy()
+        C = torch.cat((torch.ones(1, num_train), -torch.ones(1, num_train), torch.eye(num_train), -torch.eye(num_train))).numpy().astype(np.double).T
+        b = torch.cat((torch.tensor([(1 - eps) * num_train, -(1 + eps) * num_train]), torch.zeros(num_train), -bound * torch.ones(num_train))).numpy().astype(np.double)
     else:
-        C = torch.cat((torch.eye(num_train), -torch.eye(num_train))).double().numpy().T
-        b = torch.cat((torch.zeros(num_train), -bound * torch.ones(num_train))).double().numpy()
+        C = torch.cat((torch.eye(num_train), -torch.eye(num_train))).numpy().astype(np.double).T
+        b = torch.cat((torch.zeros(num_train), -bound * torch.ones(num_train))).numpy().astype(np.double)
     w_hat = quadprog.solve_qp(G, a, C, b)[0]
     w_hat = np.maximum(np.zeros(num_train), w_hat)
-    return torch.tensor(w_hat)
+    return torch.tensor(w_hat, dtype=torch.float32)

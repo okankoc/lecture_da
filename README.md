@@ -9,6 +9,6 @@ Slides are also included in the repo as a pdf file!
 
 # Run code
 Make sure to get the necessary libraries like numpy and pytorch:
-pip install numpy matplotlib torch torchvision
+pip install numpy matplotlib torch torchvision pot
 For importance weighting we use a few extra libraries:
 pip install scikit-learn quadprog scipy
